@@ -17,11 +17,21 @@ export interface Service {
   name: string;
   duration: number; // in minutes
   price: number;
+  isActive: boolean;
 }
 
 export interface TimeSlot {
   time: string;
   available: boolean;
+  shift?: 'morning' | 'evening';
+}
+
+export interface ReminderPreference {
+  enabled: boolean;
+  channels: {
+    email: boolean;
+    sms: boolean;
+  };
 }
 
 export interface Appointment {
@@ -34,7 +44,11 @@ export interface Appointment {
   serviceName: string;
   date: string;
   time: string;
+  hebrewDate?: string;
   status: 'scheduled' | 'arrived' | 'completed' | 'cancelled';
+  reminderPreference?: ReminderPreference;
+  reminderSent?: boolean;
+  cancellationReason?: string;
   createdAt: string;
 }
 
@@ -71,10 +85,17 @@ export interface FinanceRecord {
   customerId?: string;
 }
 
+export interface WorkingShift {
+  start: string; // HH:mm
+  end: string;   // HH:mm
+  enabled: boolean;
+}
+
 export interface WorkingHours {
   dayOfWeek: number;
-  startTime: string;
-  endTime: string;
+  dayName: string;
+  morningShift: WorkingShift;
+  eveningShift?: WorkingShift;
   isWorkingDay: boolean;
 }
 
@@ -86,11 +107,12 @@ export interface BlockedDate {
 
 export interface Reminder {
   id: string;
-  type: 'holiday' | 'appointment' | 'followup';
+  type: 'holiday' | 'appointment' | 'followup' | 'washing';
   title: string;
   message: string;
   sendVia: 'phone' | 'email' | 'both';
   enabled: boolean;
+  sendBeforeDays?: number;
 }
 
 export interface KPIData {
@@ -111,4 +133,36 @@ export interface CustomerReport {
     cost: number;
     count: number;
   }[];
+}
+
+export interface Notification {
+  id: string;
+  type: 'cancellation' | 'new_booking' | 'reminder_sent' | 'system';
+  title: string;
+  message: string;
+  read: boolean;
+  appointmentId?: string;
+  customerId?: string;
+  createdAt: string;
+}
+
+export interface Post {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  isPublished: boolean;
+}
+
+export interface AboutContent {
+  title: string;
+  description: string;
+  highlights: string[];
+  imageUrl?: string;
+}
+
+export interface SystemSettings {
+  cancellationDeadlineHours: number;
+  reminderDaysBefore: number;
+  timezone: string;
 }
