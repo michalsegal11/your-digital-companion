@@ -32,7 +32,7 @@ enum TransactionType {
 }
 
 model Client {
-  id                     String   @id @default(uuid())
+  id                     String                 @id @default(uuid())
   fullName               String
   phone                  String?
   email                  String?
@@ -42,21 +42,21 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  appointments   Appointment[]
-  wigPurchases   WigPurchase[]
-  transactions   Transaction[]
+  appointments Appointment[]
+  wigPurchases WigPurchase[]
+  transactions Transaction[]
 }
 
 model WigPurchase {
-  id                     String   @id @default(uuid())
-  clientId               String
-  purchaseDate           DateTime
-  wigDescription         String
-  price                  Int
-  warrantyEndDate        DateTime
-  freeStylingEndDate     DateTime?
-  maxFreeStylingVisits   Int?
-  notes                  String?
+  id                   String    @id @default(uuid())
+  clientId             String
+  purchaseDate         DateTime
+  wigDescription       String
+  price                Int
+  warrantyEndDate      DateTime
+  freeStylingEndDate   DateTime?
+  maxFreeStylingVisits Int?
+  notes                String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -64,13 +64,14 @@ model WigPurchase {
   client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   appointments  Appointment[]
   serviceVisits ServiceVisit[]
+  transactions  Transaction[]
 
   @@index([clientId, purchaseDate])
   @@index([warrantyEndDate])
 }
 
 model Appointment {
-  id            String   @id @default(uuid())
+  id            String            @id @default(uuid())
   clientId      String
   startTime     DateTime
   endTime       DateTime
@@ -83,8 +84,8 @@ model Appointment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  wigPurchase   WigPurchase?  @relation(fields: [wigPurchaseId], references: [id])
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  wigPurchase   WigPurchase?   @relation(fields: [wigPurchaseId], references: [id])
   serviceVisits ServiceVisit[]
 
   @@index([startTime])
@@ -92,44 +93,44 @@ model Appointment {
 }
 
 model ServiceVisit {
-  id             String   @id @default(uuid())
-  appointmentId  String
-  wigPurchaseId  String?
-  visitDate      DateTime
-  serviceName    String
-  isFree         Boolean  @default(false)
-  freeReason     String?
-  priceCharged   Int
-  internalCost   Int
-  notes          String?
+  id            String   @id @default(uuid())
+  appointmentId String
+  wigPurchaseId String?
+  visitDate     DateTime
+  serviceName   String
+  isFree        Boolean  @default(false)
+  freeReason    String?
+  priceCharged  Int
+  internalCost  Int
+  notes         String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  appointment Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  wigPurchase WigPurchase? @relation(fields: [wigPurchaseId], references: [id])
+  appointment  Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  wigPurchase  WigPurchase?  @relation(fields: [wigPurchaseId], references: [id])
   transactions Transaction[]
 
   @@index([appointmentId, visitDate])
 }
 
 model Transaction {
-  id             String           @id @default(uuid())
-  type           TransactionType
-  amount         Int
+  id              String          @id @default(uuid())
+  type            TransactionType
+  amount          Int
   transactionDate DateTime
-  clientId       String?
-  serviceVisitId String?
-  wigPurchaseId  String?
-  category       String
-  description    String?
+  clientId        String?
+  serviceVisitId  String?
+  wigPurchaseId   String?
+  category        String
+  description     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  client        Client?       @relation(fields: [clientId], references: [id])
-  serviceVisit  ServiceVisit? @relation(fields: [serviceVisitId], references: [id])
-  wigPurchase   WigPurchase?  @relation(fields: [wigPurchaseId], references: [id])
+  client       Client?       @relation(fields: [clientId], references: [id])
+  serviceVisit ServiceVisit? @relation(fields: [serviceVisitId], references: [id])
+  wigPurchase  WigPurchase?  @relation(fields: [wigPurchaseId], references: [id])
 
   @@index([transactionDate])
 }
