@@ -25,6 +25,7 @@ export function GlassCard({
 
   return (
     <div 
+      {...props}
       className={cn(
         'rounded-2xl shadow-soft transition-all duration-300',
         variants[variant],
