@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Home from "./pages/Home";
 import Book from "./pages/Book";
 import BookSuccess from "./pages/BookSuccess";
+import About from "./pages/About";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCalendar from "./pages/admin/AdminCalendar";
@@ -14,6 +15,7 @@ import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSubscribers from "./pages/admin/AdminSubscribers";
 import AdminReminders from "./pages/admin/AdminReminders";
+import AdminSettings from "./pages/admin/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,9 +28,13 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/book" element={<Book />} />
             <Route path="/book/success" element={<BookSuccess />} />
+            <Route path="/about" element={<About />} />
+            
+            {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/calendar" element={<AdminCalendar />} />
@@ -36,6 +42,9 @@ const App = () => (
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/subscribers" element={<AdminSubscribers />} />
             <Route path="/admin/reminders" element={<AdminReminders />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            
+            {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

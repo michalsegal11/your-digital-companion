@@ -1,11 +1,11 @@
+import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-interface SkeletonProps {
-  className?: string;
+interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'circular' | 'text';
 }
 
-export function Skeleton({ className, variant = 'default' }: SkeletonProps) {
+export function Skeleton({ className, variant = 'default', ...props }: SkeletonProps) {
   const variants = {
     default: 'rounded-xl',
     circular: 'rounded-full',
@@ -20,6 +20,7 @@ export function Skeleton({ className, variant = 'default' }: SkeletonProps) {
         variants[variant],
         className
       )}
+      {...props}
     />
   );
 }

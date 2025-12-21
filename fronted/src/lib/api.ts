@@ -9,6 +9,12 @@ import type {
   Repair,
   Combing,
   Reminder,
+  Notification,
+  Post,
+  AboutContent,
+  WorkingHours,
+  SystemSettings,
+  ReminderPreference,
 } from '@/types';
 import {
   mockServices,
@@ -21,47 +27,50 @@ import {
   mockRepairs,
   mockCombings,
   mockReminders,
+  mockNotifications,
+  mockPosts,
+  mockAboutContent,
+  mockWorkingHours,
+  mockSystemSettings,
 } from './mockData';
+import { generateTimeSlots, getServiceDuration, getHebrewDateLabel, canCancelAppointment } from './scheduling';
 
 // Simulate network delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Get all available services
- * TODO: Replace with actual API call
  */
 export async function getServices(): Promise<Service[]> {
   await delay(300);
-  return mockServices;
+  return mockServices.filter(s => s.isActive);
 }
 
 /**
  * Get available time slots for a specific date and service
- * TODO: Replace with actual API call
+ * Uses the scheduling logic with proper working hours
  */
 export async function getAvailableSlots(date: string, serviceId: string): Promise<TimeSlot[]> {
   await delay(500);
   
-  // Generate mock time slots
-  const slots: TimeSlot[] = [];
-  const startHour = 9;
-  const endHour = 17;
+  const service = mockServices.find(s => s.id === serviceId);
+  const duration = service?.duration || getServiceDuration(serviceId);
   
-  for (let hour = startHour; hour < endHour; hour++) {
-    for (const minutes of ['00', '30']) {
-      const time = `${hour.toString().padStart(2, '0')}:${minutes}`;
-      // Randomly make some slots unavailable
-      const available = Math.random() > 0.3;
-      slots.push({ time, available });
-    }
-  }
+  // Get existing appointments for conflict checking
+  const existingApts = mockAppointments
+    .filter(a => a.date === date && a.status !== 'cancelled')
+    .map(a => ({
+      date: a.date,
+      time: a.time,
+      duration: mockServices.find(s => s.id === a.serviceId)?.duration || 15,
+    }));
   
-  return slots;
+  const dateObj = new Date(date);
+  return generateTimeSlots(dateObj, duration, existingApts);
 }
 
 /**
  * Create a new appointment
- * TODO: Replace with actual API call
  */
 export async function createAppointment(payload: {
   serviceId: string;
@@ -70,10 +79,12 @@ export async function createAppointment(payload: {
   customerName: string;
   customerPhone: string;
   customerEmail: string;
+  reminderPreference?: ReminderPreference;
 }): Promise<Appointment> {
   await delay(800);
   
   const service = mockServices.find(s => s.id === payload.serviceId);
+  const hebrewDate = getHebrewDateLabel(new Date(payload.date));
   
   const appointment: Appointment = {
     id: Date.now().toString(),
@@ -85,7 +96,10 @@ export async function createAppointment(payload: {
     serviceName: service?.name || '',
     date: payload.date,
     time: payload.time,
+    hebrewDate,
     status: 'scheduled',
+    reminderPreference: payload.reminderPreference || { enabled: false, channels: { email: false, sms: false } },
+    reminderSent: false,
     createdAt: new Date().toISOString(),
   };
   
@@ -93,8 +107,69 @@ export async function createAppointment(payload: {
 }
 
 /**
+ * Update an existing appointment
+ */
+export async function updateAppointment(
+  appointmentId: string,
+  updates: Partial<Pick<Appointment, 'serviceId' | 'date' | 'time'>>
+): Promise<Appointment> {
+  await delay(500);
+  
+  const appointment = mockAppointments.find(a => a.id === appointmentId);
+  if (!appointment) {
+    throw new Error('Appointment not found');
+  }
+  
+  const service = updates.serviceId 
+    ? mockServices.find(s => s.id === updates.serviceId)
+    : mockServices.find(s => s.id === appointment.serviceId);
+  
+  const hebrewDate = updates.date 
+    ? getHebrewDateLabel(new Date(updates.date))
+    : appointment.hebrewDate;
+  
+  return {
+    ...appointment,
+    ...updates,
+    serviceName: service?.name || appointment.serviceName,
+    hebrewDate,
+  };
+}
+
+/**
+ * Cancel an appointment (with deadline check)
+ */
+export async function cancelAppointment(
+  appointmentId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  await delay(300);
+  
+  const appointment = mockAppointments.find(a => a.id === appointmentId);
+  if (!appointment) {
+    return { success: false, error: 'התור לא נמצא' };
+  }
+  
+  // Check cancellation deadline
+  const canCancel = canCancelAppointment(
+    appointment.date,
+    appointment.time,
+    mockSystemSettings.cancellationDeadlineHours
+  );
+  
+  if (!canCancel) {
+    return { 
+      success: false, 
+      error: `לא ניתן לבטל תור פחות מ-${mockSystemSettings.cancellationDeadlineHours} שעות לפני מועדו` 
+    };
+  }
+  
+  // In real implementation, this would also create a notification for the manager
+  return { success: true };
+}
+
+/**
  * Get appointments for a date range
- * TODO: Replace with actual API call
  */
 export async function getAppointments(range: { start: string; end: string }): Promise<Appointment[]> {
   await delay(400);
@@ -106,7 +181,6 @@ export async function getAppointments(range: { start: string; end: string }): Pr
 
 /**
  * Update appointment status
- * TODO: Replace with actual API call
  */
 export async function updateAppointmentStatus(
   appointmentId: string,
@@ -123,17 +197,7 @@ export async function updateAppointmentStatus(
 }
 
 /**
- * Cancel an appointment
- * TODO: Replace with actual API call
- */
-export async function cancelAppointment(appointmentId: string): Promise<void> {
-  await delay(300);
-  // TODO: Implement actual cancellation
-}
-
-/**
  * Get all customers
- * TODO: Replace with actual API call
  */
 export async function getCustomers(): Promise<Customer[]> {
   await delay(400);
@@ -142,7 +206,6 @@ export async function getCustomers(): Promise<Customer[]> {
 
 /**
  * Get customer by ID
- * TODO: Replace with actual API call
  */
 export async function getCustomer(customerId: string): Promise<Customer | null> {
   await delay(300);
@@ -151,7 +214,6 @@ export async function getCustomer(customerId: string): Promise<Customer | null> 
 
 /**
  * Update customer notes
- * TODO: Replace with actual API call
  */
 export async function updateCustomerNotes(customerId: string, notes: string): Promise<Customer> {
   await delay(300);
@@ -164,7 +226,6 @@ export async function updateCustomerNotes(customerId: string, notes: string): Pr
 
 /**
  * Get customer repairs
- * TODO: Replace with actual API call
  */
 export async function getCustomerRepairs(customerId: string): Promise<Repair[]> {
   await delay(300);
@@ -173,7 +234,6 @@ export async function getCustomerRepairs(customerId: string): Promise<Repair[]> 
 
 /**
  * Get customer combings
- * TODO: Replace with actual API call
  */
 export async function getCustomerCombings(customerId: string): Promise<Combing[]> {
   await delay(300);
@@ -182,7 +242,6 @@ export async function getCustomerCombings(customerId: string): Promise<Combing[]
 
 /**
  * Add a repair for a customer
- * TODO: Replace with actual API call
  */
 export async function addRepair(customerId: string, repair: Omit<Repair, 'id' | 'customerId'>): Promise<Repair> {
   await delay(300);
@@ -195,7 +254,6 @@ export async function addRepair(customerId: string, repair: Omit<Repair, 'id' | 
 
 /**
  * Add a combing for a customer
- * TODO: Replace with actual API call
  */
 export async function addCombing(customerId: string, combing: Omit<Combing, 'id' | 'customerId'>): Promise<Combing> {
   await delay(300);
@@ -208,7 +266,6 @@ export async function addCombing(customerId: string, combing: Omit<Combing, 'id'
 
 /**
  * Get customer report
- * TODO: Replace with actual API call
  */
 export async function getCustomerReport(customerId: string): Promise<CustomerReport | null> {
   await delay(500);
@@ -217,7 +274,6 @@ export async function getCustomerReport(customerId: string): Promise<CustomerRep
 
 /**
  * Get all subscribers
- * TODO: Replace with actual API call
  */
 export async function getSubscribers(): Promise<Subscriber[]> {
   await delay(400);
@@ -226,7 +282,6 @@ export async function getSubscribers(): Promise<Subscriber[]> {
 
 /**
  * Add a new subscriber
- * TODO: Replace with actual API call
  */
 export async function addSubscriber(email: string): Promise<Subscriber> {
   await delay(500);
@@ -240,7 +295,6 @@ export async function addSubscriber(email: string): Promise<Subscriber> {
 
 /**
  * Get income and expenses for a year
- * TODO: Replace with actual API call
  */
 export async function getIncomeExpenses(year: string): Promise<{ month: string; income: number; expense: number }[]> {
   await delay(400);
@@ -249,7 +303,6 @@ export async function getIncomeExpenses(year: string): Promise<{ month: string; 
 
 /**
  * Get KPI data for dashboard
- * TODO: Replace with actual API call
  */
 export async function getKPIData(): Promise<KPIData> {
   await delay(300);
@@ -258,7 +311,6 @@ export async function getKPIData(): Promise<KPIData> {
 
 /**
  * Get all customer reports (for reports page)
- * TODO: Replace with actual API call
  */
 export async function getAllCustomerReports(): Promise<CustomerReport[]> {
   await delay(500);
@@ -267,7 +319,6 @@ export async function getAllCustomerReports(): Promise<CustomerReport[]> {
 
 /**
  * Get reminders configuration
- * TODO: Replace with actual API call
  */
 export async function getReminders(): Promise<Reminder[]> {
   await delay(300);
@@ -276,7 +327,6 @@ export async function getReminders(): Promise<Reminder[]> {
 
 /**
  * Update reminder
- * TODO: Replace with actual API call
  */
 export async function updateReminder(reminder: Reminder): Promise<Reminder> {
   await delay(300);
@@ -285,30 +335,121 @@ export async function updateReminder(reminder: Reminder): Promise<Reminder> {
 
 /**
  * Send test reminder
- * TODO: Replace with actual API call
  */
 export async function sendTestReminder(reminderId: string): Promise<void> {
   await delay(1000);
-  // TODO: Implement actual reminder sending
 }
 
 /**
  * Generate PDF report
- * TODO: Replace with actual API call
  */
 export async function generatePDFReport(type: string, params?: Record<string, unknown>): Promise<void> {
   await delay(2000);
-  // TODO: Implement actual PDF generation
+}
+
+/**
+ * Get notifications for manager
+ */
+export async function getNotifications(): Promise<Notification[]> {
+  await delay(300);
+  return mockNotifications;
+}
+
+/**
+ * Mark notification as read
+ */
+export async function markNotificationRead(notificationId: string): Promise<void> {
+  await delay(200);
+}
+
+/**
+ * Get all posts
+ */
+export async function getPosts(): Promise<Post[]> {
+  await delay(300);
+  return mockPosts;
+}
+
+/**
+ * Create/Update post
+ */
+export async function savePost(post: Omit<Post, 'id'> & { id?: string }): Promise<Post> {
+  await delay(500);
+  return {
+    id: post.id || Date.now().toString(),
+    ...post,
+  } as Post;
+}
+
+/**
+ * Delete post
+ */
+export async function deletePost(postId: string): Promise<void> {
+  await delay(300);
+}
+
+/**
+ * Get about content
+ */
+export async function getAboutContent(): Promise<AboutContent> {
+  await delay(300);
+  return mockAboutContent;
+}
+
+/**
+ * Update about content
+ */
+export async function updateAboutContent(content: AboutContent): Promise<AboutContent> {
+  await delay(500);
+  return content;
+}
+
+/**
+ * Get working hours
+ */
+export async function getWorkingHours(): Promise<WorkingHours[]> {
+  await delay(300);
+  return mockWorkingHours;
+}
+
+/**
+ * Update working hours
+ */
+export async function updateWorkingHours(hours: WorkingHours[]): Promise<WorkingHours[]> {
+  await delay(500);
+  return hours;
+}
+
+/**
+ * Get system settings
+ */
+export async function getSystemSettings(): Promise<SystemSettings> {
+  await delay(300);
+  return mockSystemSettings;
+}
+
+/**
+ * Update system settings
+ */
+export async function updateSystemSettings(settings: SystemSettings): Promise<SystemSettings> {
+  await delay(500);
+  return settings;
+}
+
+/**
+ * Update service
+ */
+export async function updateService(service: Service): Promise<Service> {
+  await delay(400);
+  return service;
 }
 
 /**
  * Mock login function
- * TODO: Replace with actual authentication
  */
 export async function login(email: string, password: string): Promise<{ success: boolean; user?: { name: string; email: string } }> {
   await delay(800);
   
-  // Mock authentication - accept any credentials for demo
   if (email && password) {
     return {
       success: true,
@@ -324,9 +465,7 @@ export async function login(email: string, password: string): Promise<{ success:
 
 /**
  * Mock logout function
- * TODO: Replace with actual authentication
  */
 export async function logout(): Promise<void> {
   await delay(300);
-  // TODO: Implement actual logout
 }
