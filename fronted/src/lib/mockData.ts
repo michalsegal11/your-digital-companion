@@ -9,14 +9,19 @@ import type {
   WorkingHours,
   Reminder,
   KPIData,
-  CustomerReport
+  CustomerReport,
+  Notification,
+  Post,
+  AboutContent,
+  SystemSettings
 } from '@/types';
 
+// CRITICAL: Service durations must match scheduling rules
 export const mockServices: Service[] = [
-  { id: '1', name: 'התאמה', duration: 60, price: 500 },
-  { id: '2', name: 'תיקון', duration: 45, price: 300 },
-  { id: '3', name: 'סירוק', duration: 30, price: 150 },
-  { id: '4', name: 'ייעוץ', duration: 30, price: 200 },
+  { id: 'siruq', name: 'סירוק', duration: 15, price: 150, isActive: true },
+  { id: 'tiqun', name: 'תיקון', duration: 15, price: 300, isActive: true },
+  { id: 'purchase', name: 'קניית פאה', duration: 60, price: 3500, isActive: true },
+  { id: 'consultation', name: 'ייעוץ', duration: 30, price: 200, isActive: true },
 ];
 
 export const mockCustomers: Customer[] = [
@@ -43,7 +48,7 @@ export const mockCustomers: Customer[] = [
     warrantyEndDate: '2025-01-20',
     freeCombingsMonths: 12,
     freeCombingsUsed: 8,
-    notes: 'לקוחה מרוחקת - הארכת סירוקים חינם',
+    notes: 'לקוחה מרוחקת - הארכת סירוקים חינם ל-12 חודשים',
     createdAt: '2024-01-20',
   },
   {
@@ -61,6 +66,10 @@ export const mockCustomers: Customer[] = [
   },
 ];
 
+const today = new Date().toISOString().split('T')[0];
+const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
 export const mockAppointments: Appointment[] = [
   {
     id: '1',
@@ -68,11 +77,14 @@ export const mockAppointments: Appointment[] = [
     customerName: 'שרה כהן',
     customerPhone: '050-1234567',
     customerEmail: 'sara@example.com',
-    serviceId: '3',
+    serviceId: 'siruq',
     serviceName: 'סירוק',
-    date: new Date().toISOString().split('T')[0],
+    date: today,
     time: '10:00',
+    hebrewDate: 'י״ב כסלו',
     status: 'scheduled',
+    reminderPreference: { enabled: true, channels: { email: true, sms: false } },
+    reminderSent: true,
     createdAt: new Date().toISOString(),
   },
   {
@@ -81,11 +93,14 @@ export const mockAppointments: Appointment[] = [
     customerName: 'רחל לוי',
     customerPhone: '052-9876543',
     customerEmail: 'rachel@example.com',
-    serviceId: '2',
+    serviceId: 'tiqun',
     serviceName: 'תיקון',
-    date: new Date().toISOString().split('T')[0],
+    date: today,
     time: '14:00',
+    hebrewDate: 'י״ב כסלו',
     status: 'scheduled',
+    reminderPreference: { enabled: true, channels: { email: false, sms: true } },
+    reminderSent: true,
     createdAt: new Date().toISOString(),
   },
   {
@@ -94,11 +109,30 @@ export const mockAppointments: Appointment[] = [
     customerName: 'מרים אברהם',
     customerPhone: '054-5555555',
     customerEmail: 'miriam@example.com',
-    serviceId: '1',
-    serviceName: 'התאמה',
-    date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    serviceId: 'purchase',
+    serviceName: 'קניית פאה',
+    date: tomorrow,
     time: '11:00',
+    hebrewDate: 'י״ג כסלו',
     status: 'scheduled',
+    reminderPreference: { enabled: true, channels: { email: true, sms: true } },
+    reminderSent: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '4',
+    customerId: '1',
+    customerName: 'שרה כהן',
+    customerPhone: '050-1234567',
+    customerEmail: 'sara@example.com',
+    serviceId: 'siruq',
+    serviceName: 'סירוק',
+    date: nextWeek,
+    time: '21:30',
+    hebrewDate: 'י״ט כסלו',
+    status: 'scheduled',
+    reminderPreference: { enabled: true, channels: { email: true, sms: false } },
+    reminderSent: false,
     createdAt: new Date().toISOString(),
   },
 ];
@@ -135,29 +169,39 @@ export const mockFinanceRecords: FinanceRecord[] = [
 ];
 
 export const mockWorkingHours: WorkingHours[] = [
-  { dayOfWeek: 0, startTime: '09:00', endTime: '17:00', isWorkingDay: true },
-  { dayOfWeek: 1, startTime: '09:00', endTime: '17:00', isWorkingDay: true },
-  { dayOfWeek: 2, startTime: '09:00', endTime: '17:00', isWorkingDay: true },
-  { dayOfWeek: 3, startTime: '09:00', endTime: '17:00', isWorkingDay: true },
-  { dayOfWeek: 4, startTime: '09:00', endTime: '14:00', isWorkingDay: true },
-  { dayOfWeek: 5, startTime: '', endTime: '', isWorkingDay: false },
-  { dayOfWeek: 6, startTime: '', endTime: '', isWorkingDay: false },
+  { dayOfWeek: 0, dayName: 'ראשון', morningShift: { start: '09:30', end: '14:45', enabled: true }, isWorkingDay: true },
+  { dayOfWeek: 1, dayName: 'שני', morningShift: { start: '09:30', end: '14:45', enabled: true }, eveningShift: { start: '21:00', end: '23:00', enabled: true }, isWorkingDay: true },
+  { dayOfWeek: 2, dayName: 'שלישי', morningShift: { start: '09:30', end: '14:45', enabled: true }, isWorkingDay: true },
+  { dayOfWeek: 3, dayName: 'רביעי', morningShift: { start: '09:30', end: '14:45', enabled: true }, eveningShift: { start: '21:00', end: '23:00', enabled: true }, isWorkingDay: true },
+  { dayOfWeek: 4, dayName: 'חמישי', morningShift: { start: '09:30', end: '14:45', enabled: true }, isWorkingDay: true },
+  { dayOfWeek: 5, dayName: 'שישי', morningShift: { start: '', end: '', enabled: false }, isWorkingDay: false },
+  { dayOfWeek: 6, dayName: 'שבת', morningShift: { start: '', end: '', enabled: false }, isWorkingDay: false },
 ];
 
 export const mockReminders: Reminder[] = [
   {
     id: '1',
-    type: 'holiday',
-    title: 'תזכורת ערב חג',
-    message: 'היי! ערב חג מתקרב - הזמן לסרק את הפאה 💇‍♀️',
+    type: 'washing',
+    title: 'תזכורת כביסת פאה',
+    message: 'תזכורת: נא להביא את הפאה לכביסה לפני השעה 14:30 ביום שלפני התור',
     sendVia: 'both',
     enabled: true,
+    sendBeforeDays: 1,
   },
   {
     id: '2',
     type: 'appointment',
     title: 'תזכורת תור',
     message: 'תזכורת: יש לך תור מחר בשעה {time}',
+    sendVia: 'both',
+    enabled: true,
+    sendBeforeDays: 1,
+  },
+  {
+    id: '3',
+    type: 'holiday',
+    title: 'תזכורת ערב חג',
+    message: 'היי! ערב חג מתקרב - הזמן לסרק את הפאה 💇‍♀️',
     sendVia: 'both',
     enabled: true,
   },
@@ -263,3 +307,61 @@ export const mockReviews = [
     date: '2024-09-22',
   },
 ];
+
+export const mockNotifications: Notification[] = [
+  {
+    id: '1',
+    type: 'cancellation',
+    title: 'ביטול תור',
+    message: 'שרה כהן ביטלה את התור לסירוק בתאריך 15/12/2024 בשעה 10:00',
+    read: false,
+    appointmentId: '1',
+    customerId: '1',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    type: 'new_booking',
+    title: 'תור חדש',
+    message: 'רחל לוי קבעה תור לתיקון בתאריך 16/12/2024 בשעה 14:00',
+    read: true,
+    appointmentId: '2',
+    customerId: '2',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+];
+
+export const mockPosts: Post[] = [
+  {
+    id: '1',
+    title: 'שעות פעילות בחנוכה',
+    content: 'לקוחות יקרות, בימי החנוכה נעבוד בשעות מורחבות. ניתן לקבוע תורים גם בשעות הערב.',
+    date: '2024-12-10',
+    isPublished: true,
+  },
+  {
+    id: '2',
+    title: 'מבצע סוף שנה',
+    content: 'מבצע מיוחד לסוף שנה! 10% הנחה על כל שירותי הסירוק עד סוף דצמבר.',
+    date: '2024-12-01',
+    isPublished: true,
+  },
+];
+
+export const mockAboutContent: AboutContent = {
+  title: 'אודותיי',
+  description: 'ברוכות הבאות! אני פאנית מקצועית עם ניסיון של למעלה מ-15 שנה בתחום. מתמחה בהתאמה אישית, סירוק מקצועי ותיקונים. אני מאמינה בשירות אישי, דיסקרטי ומקצועי לכל לקוחה.',
+  highlights: [
+    'ניסיון של 15+ שנים',
+    'התאמה אישית לכל לקוחה',
+    'שירות דיסקרטי ומקצועי',
+    'אחריות על כל פאה',
+    'סירוקים חינם לתקופה מוגדרת',
+  ],
+};
+
+export const mockSystemSettings: SystemSettings = {
+  cancellationDeadlineHours: 24,
+  reminderDaysBefore: 1,
+  timezone: 'Asia/Jerusalem',
+};

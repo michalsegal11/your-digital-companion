@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
+import { ReactNode, HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
-interface GlassCardProps {
+interface GlassCardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
   hover?: boolean;
@@ -14,7 +14,8 @@ export function GlassCard({
   className, 
   hover = false, 
   glow = false,
-  variant = 'default' 
+  variant = 'default',
+  ...props
 }: GlassCardProps) {
   const variants = {
     default: 'bg-white/80 backdrop-blur-xl border border-white/30',
@@ -24,6 +25,7 @@ export function GlassCard({
 
   return (
     <div 
+      {...props}
       className={cn(
         'rounded-2xl shadow-soft transition-all duration-300',
         variants[variant],
