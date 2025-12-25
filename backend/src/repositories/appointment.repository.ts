@@ -1,4 +1,4 @@
-import { prisma } from '../prisma/client';
+import { prisma } from '../db/prismaClient';
 import { Appointment } from '@prisma/client';
 
 export const AppointmentRepository = {
