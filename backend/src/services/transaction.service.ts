@@ -1,23 +1,23 @@
-import { transactionQuery } from "../db/transaction.query";
+import { TransactionRepository } from "../repositories/transaction.repository";
 
 export const transactionService = {
   getAll: async () => {
-    return transactionQuery.findAll();
+    return TransactionRepository.findAll();
   },
 
   getById: async (id: string) => {
-    return transactionQuery.findById(id);
+    return TransactionRepository.findById(id);
   },
 
   create: async (data: any) => {
-    return transactionQuery.create(data);
+    return TransactionRepository.create(data);
   },
 
   update: async (id: string, data: any) => {
-    return transactionQuery.update(id, data);
+    return TransactionRepository.update(id, data);
   },
 
   remove: async (id: string) => {
-    return transactionQuery.delete(id);
+    return TransactionRepository.delete(id);
   }
 };

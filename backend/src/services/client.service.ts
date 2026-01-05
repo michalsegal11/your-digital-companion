@@ -1,23 +1,23 @@
-import { clientQuery } from "../db/client.query";
+import { ClientRepository } from "../repositories/client.repository";
 
 export const clientService = {
   getAll: async () => {
-    return clientQuery.findAll();
+    return ClientRepository.findAll();
   },
 
   getById: async (id: string) => {
-    return clientQuery.findById(id);
+    return ClientRepository.findById(id);
   },
 
   create: async (data: any) => {
-    return clientQuery.create(data);
+    return ClientRepository.create(data);
   },
 
   update: async (id: string, data: any) => {
-    return clientQuery.update(id, data);
+    return ClientRepository.update(id, data);
   },
 
   remove: async (id: string) => {
-    return clientQuery.delete(id);
+    return ClientRepository.delete(id);
   }
 };

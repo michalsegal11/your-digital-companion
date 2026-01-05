@@ -20,5 +20,4 @@ app.use("/appointments", appointmentRouter);
 app.use("/service-visits", serviceVisitRouter);
 app.use("/transactions", transactionRouter);
 
-
 app.use(errorHandler);

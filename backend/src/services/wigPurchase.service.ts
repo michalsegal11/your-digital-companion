@@ -1,23 +1,23 @@
-import { wigPurchaseQuery } from "../db/wigPurchase.query";
+import { WigPurchaseRepository } from "../repositories/wigPurchase.repository";
 
 export const wigPurchaseService = {
   getAll: async () => {
-    return wigPurchaseQuery.findAll();
+    return WigPurchaseRepository.findAll();
   },
 
   getById: async (id: string) => {
-    return wigPurchaseQuery.findById(id);
+    return WigPurchaseRepository.findById(id);
   },
 
   create: async (data: any) => {
-    return wigPurchaseQuery.create(data);
+    return WigPurchaseRepository.create(data);
   },
 
   update: async (id: string, data: any) => {
-    return wigPurchaseQuery.update(id, data);
+    return WigPurchaseRepository.update(id, data);
   },
 
   remove: async (id: string) => {
-    return wigPurchaseQuery.delete(id);
+    return WigPurchaseRepository.delete(id);
   }
 };
